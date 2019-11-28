@@ -56,6 +56,7 @@ class RecycleAdapter : RecyclerView.Adapter<RecycleAdapter.ModelViewHolder> {
         holder.textminor?.text = minordata[position]
 
         if (imgdata[position] != "stockphoto") {
+            Log.d("ak_img_found", "$imgdata[position]")
             holder.imgavatar?.let { Glide.with(ctx).load(imgdata[position]).into(it) }
         }
         else {

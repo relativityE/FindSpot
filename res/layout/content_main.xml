@@ -48,6 +48,7 @@
         android:ems="10"
         android:hint="@string/hint"
         android:inputType="text"
+        android:selectAllOnFocus="true"
         app:layout_constraintEnd_toStartOf="@+id/testbutton"
         app:layout_constraintStart_toStartOf="@+id/textView"
         app:layout_constraintTop_toBottomOf="@+id/textView"

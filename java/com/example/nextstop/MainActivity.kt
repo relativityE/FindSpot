@@ -22,18 +22,14 @@ import org.json.JSONException
 
 class MainActivity : AppCompatActivity() {
 
-
     //set intent for results on new activity page
     private lateinit var sendintent : Intent
-
     //get reference to recycle view Id
     private lateinit var recycleViewId : RecyclerView
-
     //for some reason, you have to use a linear layout manager, set vertical,
     //to inject into recycle view
     private lateinit var layoutManager : LinearLayoutManager
     //val layoutManager = GridLayoutManager(this, 2)
-
     //access to data class
     private lateinit var dataHandle : DataStore
 
@@ -45,14 +41,13 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        this.recycleViewId = findViewById(R.id.recycleViewId)
-        this.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL,false)
-        this.sendintent = Intent(this, ResultsActivity::class.java)
-        //set layout manager for recycler viewId
-        recycleViewId.layoutManager = layoutManager
-
         dataHandle = DataStore.getInstance(this)
         Log.d("ak_Datastore","instantiated!!")
+
+        this.recycleViewId = findViewById(R.id.recycleViewId)
+        this.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL,false)
+        //set layout manager for recycler viewId
+        recycleViewId.layoutManager = layoutManager
 
         //fb debug hooks
         FacebookSdk.addLoggingBehavior(LoggingBehavior.REQUESTS)
@@ -60,39 +55,70 @@ class MainActivity : AppCompatActivity() {
         FacebookSdk.addLoggingBehavior(LoggingBehavior.INCLUDE_RAW_RESPONSES)
         FacebookSdk.addLoggingBehavior(LoggingBehavior.GRAPH_API_DEBUG_INFO)
 
+        //***********************************
+        //starting LISTENERS here
+        //***********************************
+
         //***********
         //LISTENER 1
         //***********
         //verify there's internet connection
         testbutton.setOnClickListener {
-
             //test connection
             //this.internetConnection()
-
-            //access facebook graph
-            callFacebookAPI()
-
-            editTextLocation.setText("")
-            Log.d("ak_search", "clear search box")
+            if (editTextLocation.text.isNotEmpty()) {
+                //access facebook graph
+                callFacebookAPI()
+                //Log.d("ak_search", "clear search box")
+                //editTextLocation.setText("")
+            }
+            else{
+                Toast.makeText(this, "Please enter location", Toast.LENGTH_LONG ).show()
+            }
         }
 
         //***********
         //LISTENER 2
         //***********
         getInfobutton.setOnClickListener {
+            if (this.editTextLocation.text.isNotEmpty()) {
+                Log.d("ak_input", "sendbtn pressed ${editTextLocation.text}")
+                Toast.makeText(this, editTextLocation.text, Toast.LENGTH_LONG).show()
+                Snackbar.make(myconstraintlayout, editTextLocation.text, Snackbar.LENGTH_LONG)
+                    .show()
+                //test w/ local data
+                useTestData()
+            }
+            else{
+                Toast.makeText(this, "Please enter location", Toast.LENGTH_LONG ).show()
+            }
+        }
+    }
 
-            Log.d("ak_input", "sendbtn pressed ${editTextLocation.text}")
-            Toast.makeText(this, editTextLocation.text, Toast.LENGTH_LONG ).show()
-            Snackbar.make(myconstraintlayout, editTextLocation.text, Snackbar.LENGTH_LONG).show()
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        Log.d("ak_onSaveInstanceState", "onSaveInstanceState")
+        outState.putParcelable("uidata", dataHandle.apidata)
+        outState.putString("Test", "myinfo")
+    }
 
-            //test w/ local data
-            useTestData()
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        Log.d("ak_onRestore", "onRestoreInstanceState")
+        Toast.makeText(this, "Restore: ${savedInstanceState.getString("Test")}", Toast.LENGTH_LONG ).show()
+        println("ak_onRestore re-setting the recycler view")
+
+        dataHandle = DataStore.getInstance(this)
+        if (dataHandle.apidata != null){
+            //instantiate recycle view adapter
+            val recyclerAdapter = RecycleAdapter(ctx = this@MainActivity, apiData = dataHandle.apidata)
+            recycleViewId.adapter = recyclerAdapter
         }
     }
 
     override fun onStart() {
         super.onStart()
-        Log.d("ak_onStart", "OnStart")
+        Log.d("ak_onStart", "onStart")
     }
 
     override fun onPause() {
@@ -103,6 +129,21 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         Log.d("ak_onResume", "onResume")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Log.d("ak_onStop", "onStop")
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+        Log.d("ak_onRestart", "onRestart")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d("ak_onDestroy", "onDestroy")
     }
 
 
@@ -123,6 +164,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // remove android:usesCleartextTraffic="true" from
+    // AndroidManifest.xml when switch fully to https
     private fun useTestData(){
 
         //clear contents of class in case it was populated
@@ -153,6 +196,7 @@ class MainActivity : AppCompatActivity() {
             Response.Listener { response ->
                 Log.d("ak_mockyio","Response: $response")
                 val param = "Response: %s".format(response.toString())
+                val sendintent = Intent(this, ResultsActivity::class.java)
                 sendintent.putExtra("result", param)
             },
             Response.ErrorListener { error ->
@@ -167,7 +211,8 @@ class MainActivity : AppCompatActivity() {
         dataHandle.clearContent()
 
         //create empty arraylist to request permissions
-        val permissions = ArrayList<String>(2)
+        //val permissions = ArrayList<String>(2)
+        
         //get client token from developer portal (this token does not require user login)
         //can make requests to Facebook's PlaceManager after token set
         FacebookSdk.setClientToken(this@MainActivity.getString(R.string.fb_client_token))
@@ -180,7 +225,7 @@ class MainActivity : AppCompatActivity() {
             this@MainActivity.getString(R.string.fb_app_uid), null,
             null, null, null,
             null,null, null)
-        Log.d("ak_access_token", "Expired? ".format(accessToken.isExpired.toString()))
+        Log.d("ak_access_token", "Expired? %s".format(accessToken.isExpired.toString()))
         Log.d("ak_access_token_uid", accessToken.userId.toString())
 
         val request = GraphRequest.newGraphPathRequest(
@@ -195,6 +240,7 @@ class MainActivity : AppCompatActivity() {
                     Toast.LENGTH_LONG
                 ).show()
             } else {
+                Log.d("ak_facebookAPI","$response")
                 val responseArr  = response!!.jsonObject.getJSONArray("data")
                 Log.d("ak_response items", "${responseArr.length()}")
                 for (index in 0 until responseArr.length()-1) {
@@ -214,7 +260,7 @@ class MainActivity : AppCompatActivity() {
                         //image content not found
                         dataHandle.apidata.apiThird.add(resources.getString(R.string.stockphoto))
                         }
-                    Log.d("ak_searchName", dataHandle.apidata.apiFirst[index])
+                    Log.d("ak_searchresultsName", dataHandle.apidata.apiFirst[index])
                 }
 
                 //instantiate recycle view adapter

@@ -1,6 +1,5 @@
 package com.example.nextstop
 
-import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -25,8 +24,8 @@ class ResultsActivity : AppCompatActivity() {
         }
 
         backbutton.setOnClickListener {
-            val backIntent = Intent(this, MainActivity::class.java)
-            startActivity(backIntent)
+            //end activity, nothing returned
+            finish()
         }
 
         resultsbutton.setOnClickListener {
