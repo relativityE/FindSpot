@@ -37,7 +37,6 @@ class MainActivity : AppCompatActivity() {
     //access to data class
     private lateinit var dataHandle : DataStore
 
-
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,28 +64,34 @@ class MainActivity : AppCompatActivity() {
         //***********
         //verify there's internet connection
         testbutton.setOnClickListener {
-
             //test connection
             //this.internetConnection()
-
-            //access facebook graph
-            callFacebookAPI()
-
-            editTextLocation.setText("")
-            Log.d("ak_search", "clear search box")
+            if (editTextLocation.text.isNotEmpty()) {
+                //access facebook graph
+                callFacebookAPI()
+                Log.d("ak_search", "clear search box")
+                editTextLocation.setText("")
+            }
+            else{
+                Toast.makeText(this, "Please enter location", Toast.LENGTH_LONG ).show()
+            }
         }
 
         //***********
         //LISTENER 2
         //***********
         getInfobutton.setOnClickListener {
-
-            Log.d("ak_input", "sendbtn pressed ${editTextLocation.text}")
-            Toast.makeText(this, editTextLocation.text, Toast.LENGTH_LONG ).show()
-            Snackbar.make(myconstraintlayout, editTextLocation.text, Snackbar.LENGTH_LONG).show()
-
-            //test w/ local data
-            useTestData()
+            if (this.editTextLocation.text.isNotEmpty()) {
+                Log.d("ak_input", "sendbtn pressed ${editTextLocation.text}")
+                Toast.makeText(this, editTextLocation.text, Toast.LENGTH_LONG).show()
+                Snackbar.make(myconstraintlayout, editTextLocation.text, Snackbar.LENGTH_LONG)
+                    .show()
+                //test w/ local data
+                useTestData()
+            }
+            else{
+                Toast.makeText(this, "Please enter location", Toast.LENGTH_LONG ).show()
+            }
         }
     }
 
