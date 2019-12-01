@@ -212,7 +212,7 @@ class MainActivity : AppCompatActivity() {
 
         //create empty arraylist to request permissions
         //val permissions = ArrayList<String>(2)
-        
+
         //get client token from developer portal (this token does not require user login)
         //can make requests to Facebook's PlaceManager after token set
         FacebookSdk.setClientToken(this@MainActivity.getString(R.string.fb_client_token))
