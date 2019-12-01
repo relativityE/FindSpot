@@ -69,8 +69,6 @@ class MainActivity : AppCompatActivity() {
             if (editTextLocation.text.isNotEmpty()) {
                 //access facebook graph
                 callFacebookAPI()
-                //Log.d("ak_search", "clear search box")
-                //editTextLocation.setText("")
             }
             else{
                 Toast.makeText(this, "Please enter location", Toast.LENGTH_LONG ).show()
@@ -98,22 +96,17 @@ class MainActivity : AppCompatActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         Log.d("ak_onSaveInstanceState", "onSaveInstanceState")
-        outState.putParcelable("uidata", dataHandle.apidata)
-        outState.putString("Test", "myinfo")
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
-        Log.d("ak_onRestore", "onRestoreInstanceState")
-        Toast.makeText(this, "Restore: ${savedInstanceState.getString("Test")}", Toast.LENGTH_LONG ).show()
-        println("ak_onRestore re-setting the recycler view")
+        Log.d("ak_onRestore", "re-setting the recycler view")
+        Toast.makeText(this, "onRestoreInstanceState", Toast.LENGTH_LONG ).show()
 
         dataHandle = DataStore.getInstance(this)
-        if (dataHandle.apidata != null){
-            //instantiate recycle view adapter
-            val recyclerAdapter = RecycleAdapter(ctx = this@MainActivity, apiData = dataHandle.apidata)
-            recycleViewId.adapter = recyclerAdapter
-        }
+        //instantiate recycle view adapter
+        val recyclerAdapter = RecycleAdapter(ctx = this@MainActivity, apiData = dataHandle.apidata)
+        recycleViewId.adapter = recyclerAdapter
     }
 
     override fun onStart() {
@@ -209,9 +202,6 @@ class MainActivity : AppCompatActivity() {
     private fun callFacebookAPI() {
         //clear contents of class in case it was populated
         dataHandle.clearContent()
-
-        //create empty arraylist to request permissions
-        //val permissions = ArrayList<String>(2)
 
         //get client token from developer portal (this token does not require user login)
         //can make requests to Facebook's PlaceManager after token set
