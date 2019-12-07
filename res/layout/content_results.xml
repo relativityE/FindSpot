@@ -24,22 +24,59 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/innerconstraintLayout"
+        android:layout_width="407dp"
+        android:layout_height="365dp"
+        android:layout_marginTop="32dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/resultsbutton">
+
+        <ImageView
+            android:id="@+id/resultsimageView"
+            android:layout_width="0dp"
+            android:layout_height="234dp"
+            android:layout_marginBottom="24dp"
+            android:contentDescription="@string/getResult"
+            app:layout_constraintBottom_toTopOf="@+id/textViewInfo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:srcCompat="@tools:sample/backgrounds/scenic" />
+
+        <TextView
+            android:id="@+id/textViewInfo"
+            android:layout_width="358dp"
+            android:layout_height="69dp"
+            android:layout_marginBottom="16dp"
+            android:text="@string/viewinfo"
+            android:textColor="@color/custom_yellow"
+            android:textSize="20sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.503"
+            app:layout_constraintStart_toStartOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
     <TextView
         android:id="@+id/resultstextView"
-        android:layout_width="333dp"
-        android:layout_height="124dp"
-        android:layout_marginTop="28dp"
-        android:autoSizeMaxTextSize="48dp"
-        android:autoSizeMinTextSize="12dp"
-        android:autoSizeStepGranularity="1sp"
-        android:autoSizeTextType="uniform"
+        android:layout_width="358dp"
+        android:layout_height="131dp"
+        android:layout_marginTop="32dp"
+        android:scrollbarAlwaysDrawHorizontalTrack="true"
+        android:scrollbarAlwaysDrawVerticalTrack="true"
+        android:scrollbarDefaultDelayBeforeFade="400"
+        android:scrollbarFadeDuration="0"
+        android:scrollbarSize="8dp"
+        android:scrollbarStyle="outsideInset"
+        android:scrollbars="vertical"
         android:text="@string/placeholder"
-        app:autoSizeMaxTextSize="24dp"
-        app:autoSizeMinTextSize="12dp"
-        app:autoSizeTextType="uniform"
+        android:textColor="@android:color/widget_edittext_dark"
+        android:textSize="18sp"
+        android:visibility="visible"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.488"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/resultsbutton" />
+        app:layout_constraintTop_toBottomOf="@+id/innerconstraintLayout" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

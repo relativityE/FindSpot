@@ -63,7 +63,7 @@ class MainActivity : AppCompatActivity() {
         //LISTENER 1
         //***********
         //verify there's internet connection
-        testbutton.setOnClickListener {
+        apibutton.setOnClickListener {
             //test connection
             //this.internetConnection()
             if (editTextLocation.text.isNotEmpty()) {
@@ -78,7 +78,7 @@ class MainActivity : AppCompatActivity() {
         //***********
         //LISTENER 2
         //***********
-        getInfobutton.setOnClickListener {
+        searchbtn.setOnClickListener {
             if (this.editTextLocation.text.isNotEmpty()) {
                 Log.d("ak_input", "sendbtn pressed ${editTextLocation.text}")
                 Toast.makeText(this, editTextLocation.text, Toast.LENGTH_LONG).show()
@@ -237,7 +237,7 @@ class MainActivity : AppCompatActivity() {
 
                     //store api results in data store
                     dataHandle.apidata.apiFirst.add(responseArr.getJSONObject(index).getString("name"))
-                    dataHandle.apidata.apiSecond.add(responseArr.getJSONObject(index).getString("checkins"))
+                    dataHandle.apidata.apiSecond.add("checkins: " + responseArr.getJSONObject(index).getString("checkins"))
 
                     try {
                         val photoUrl = responseArr.getJSONObject(index)

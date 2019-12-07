@@ -17,9 +17,11 @@
 
         <TextView
             android:id="@+id/MajorTextView"
-            android:layout_width="216dp"
+            android:layout_width="0dp"
             android:layout_height="66dp"
+            android:ellipsize="none"
             android:gravity="center"
+            android:scrollHorizontally="false"
             android:text="@string/country"
             android:textAllCaps="true"
             android:textColor="@color/colorAccent"

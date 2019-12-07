@@ -2,7 +2,10 @@ package com.example.nextstop
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.Drawable
 import android.util.Log
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,18 +13,20 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.ViewTarget
 
 
 class RecycleAdapter : RecyclerView.Adapter<RecycleAdapter.ModelViewHolder> {
 
     private val ctx: Context
-    private var intent : Intent
     private val minordata: ArrayList<String>
     private val maindata: ArrayList<String>
     private val imgdata: ArrayList<String>
     private val mvhInflater: LayoutInflater
     private lateinit var view : View
     private lateinit var modelViewHolder : ModelViewHolder
+    private var previousview : View? = null
+    private var color : Int = 0
 
 
     constructor(ctx: Context, apiData: DataStore.ModelContent) : super() {
@@ -30,7 +35,6 @@ class RecycleAdapter : RecyclerView.Adapter<RecycleAdapter.ModelViewHolder> {
         this.minordata = apiData.apiSecond
         this.imgdata   = apiData.apiThird
         this.mvhInflater = LayoutInflater.from(this.ctx)
-        this.intent = Intent(this.ctx, ResultsActivity::class.java)
     }
 
     //viewType allows for heterogeneous view - inflate views here
@@ -39,7 +43,6 @@ class RecycleAdapter : RecyclerView.Adapter<RecycleAdapter.ModelViewHolder> {
         this.view = mvhInflater.inflate(R.layout.inflate_view, parent,false)
         //pass the inflated view to view holder
         this.modelViewHolder = ModelViewHolder(view)
-
         return this.modelViewHolder
     }
 
@@ -57,7 +60,9 @@ class RecycleAdapter : RecyclerView.Adapter<RecycleAdapter.ModelViewHolder> {
 
         if (imgdata[position] != "stockphoto") {
             Log.d("ak_img_found", "$imgdata[position]")
-            holder.imgavatar?.let { Glide.with(ctx).load(imgdata[position]).into(it) }
+            holder.imgavatar?.let<ImageView, ViewTarget<ImageView, Drawable>> {
+                Glide.with(ctx).load(imgdata[position]).into(it)
+            }
         }
         else {
             Log.d("ak_img_not_found", "$imgdata[position]")
@@ -68,8 +73,24 @@ class RecycleAdapter : RecyclerView.Adapter<RecycleAdapter.ModelViewHolder> {
         holder.itemView.setOnClickListener {
             Log.d("ak_RecycleAdapter","onBindVH")
             //send selection to new view
-            intent.putExtra("viewdata", maindata[position])
+            val intent = Intent(this.ctx, ResultsActivity::class.java).apply {
+                putExtra("maindata", maindata[position])
+                putExtra("minordata", minordata[position])
+                putExtra("imgdata", imgdata[position])
+            }
             this.ctx.startActivity(intent)
+
+            if (previousview == null){
+                val typedvalue = TypedValue()
+                this.ctx.theme.resolveAttribute(R.attr.background, typedvalue, true)
+                color = typedvalue.data
+            }
+            else{
+                previousview?.setBackgroundColor(color)
+            }
+            it.setBackgroundColor(Color.YELLOW)
+            //store previous selection
+            previousview = it
         }
     }
 

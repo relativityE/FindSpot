@@ -1,28 +1,37 @@
 package com.example.nextstop
 
 import android.os.Bundle
+import android.text.method.ScrollingMovementMethod
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.snackbar.Snackbar
+import com.bumptech.glide.Glide
 import kotlinx.android.synthetic.main.activity_results.*
 import kotlinx.android.synthetic.main.content_results.*
 
 class ResultsActivity : AppCompatActivity() {
+
+    private var outstring = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_results)
         setSupportActionBar(toolbar)
 
+        resultstextView.movementMethod = ScrollingMovementMethod()
         //add data from another activity for display
-        val sentdata = requireNotNull(intent?.getStringExtra("viewdata")) { "viewdata content is null" }
-        resultstextView.text = sentdata
+        val maindata = requireNotNull(intent?.getStringExtra("maindata")) { "maindata content is null" }
+        val minordata = requireNotNull(intent?.getStringExtra("minordata")) { "maindata content is null" }
+        val imgdata = requireNotNull(intent?.getStringExtra("imgdata")) { "maindata content is null" }
+        textViewInfo.text = maindata + "\n" + minordata + "\n"
+        Glide.with(resultsimageView)
+            .load(imgdata)
+            .placeholder(R.drawable.thinkbox)
+            .into(resultsimageView)
 
-        fab.setOnClickListener { view ->
-            Snackbar.make(view, "Snackbar action goes here", Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show()
-        }
 
+        //*********
+        //LISTENERS
+        //*********
         backbutton.setOnClickListener {
             //end activity, nothing returned
             finish()
@@ -31,11 +40,15 @@ class ResultsActivity : AppCompatActivity() {
         resultsbutton.setOnClickListener {
             val appdata = DataStore.getInstance(this)
             if (appdata.apidata.apiFirst.size > 0) {
-                resultstextView.text = appdata.apidata.apiFirst.toString()
+                outstring = ""
+                appdata.apidata.apiFirst.forEach { outstring += it + "\n" }
+                resultstextView.text = outstring
             }
             else {
                 Toast.makeText(this, "No data available", Toast.LENGTH_LONG).show()
-                resultstextView.text = appdata.countries.toArray().toString()
+                outstring = ""
+                appdata.countries.forEach { outstring += it + "\n" }
+                resultstextView.text = outstring
             }
         }
     }
