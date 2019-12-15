@@ -1,5 +1,6 @@
 package com.example.nextstop
 
+import android.Manifest
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -7,6 +8,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.android.volley.Request
@@ -14,24 +16,30 @@ import com.android.volley.Response
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.Volley
 import com.facebook.*
+import com.facebook.places.PlaceManager
+import com.facebook.places.model.PlaceFields
+import com.facebook.places.model.PlaceSearchRequestParams
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
+import org.json.JSONArray
 import org.json.JSONException
 
 
 class MainActivity : AppCompatActivity() {
 
     //set intent for results on new activity page
-    private lateinit var sendintent : Intent
+    private lateinit var sendintent: Intent
     //get reference to recycle view Id
-    private lateinit var recycleViewId : RecyclerView
+    private lateinit var recycleViewId: RecyclerView
     //for some reason, you have to use a linear layout manager, set vertical,
     //to inject into recycle view
-    private lateinit var layoutManager : LinearLayoutManager
+    private lateinit var layoutManager: LinearLayoutManager
     //val layoutManager = GridLayoutManager(this, 2)
     //access to data class
-    private lateinit var dataHandle : DataStore
+    private lateinit var dataHandle: DataStore
+    val REQUEST_LOCATION = 0
+    private lateinit var accessToken: AccessToken
 
 
     @RequiresApi(Build.VERSION_CODES.P)
@@ -42,10 +50,10 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
 
         dataHandle = DataStore.getInstance(this)
-        Log.d("ak_Datastore","instantiated!!")
+        Log.d("ak_Datastore", "instantiated!!")
 
         this.recycleViewId = findViewById(R.id.recycleViewId)
-        this.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL,false)
+        this.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL, false)
         //set layout manager for recycler viewId
         recycleViewId.layoutManager = layoutManager
 
@@ -54,6 +62,17 @@ class MainActivity : AppCompatActivity() {
         FacebookSdk.addLoggingBehavior(LoggingBehavior.DEVELOPER_ERRORS)
         FacebookSdk.addLoggingBehavior(LoggingBehavior.INCLUDE_RAW_RESPONSES)
         FacebookSdk.addLoggingBehavior(LoggingBehavior.GRAPH_API_DEBUG_INFO)
+        //get client token from developer portal (this token does not require user login)
+        //can make requests to Facebook's PlaceManager after token set
+        FacebookSdk.setClientToken(this@MainActivity.getString(R.string.fb_client_token))
+
+        accessToken = AccessToken(
+            getString(R.string.fb_access_token),
+            getString(R.string.fb_app_id),
+            getString(R.string.fb_app_uid), null,
+            null, null, null,
+            null, null, null
+        )
 
         //***********************************
         //starting LISTENERS here
@@ -67,11 +86,10 @@ class MainActivity : AppCompatActivity() {
             //test connection
             //this.internetConnection()
             if (editTextLocation.text.isNotEmpty()) {
-                //access facebook graph
+                //access FB web API
                 callFacebookAPI()
-            }
-            else{
-                Toast.makeText(this, "Please enter location", Toast.LENGTH_LONG ).show()
+            } else {
+                Toast.makeText(this, "Please enter location", Toast.LENGTH_LONG).show()
             }
         }
 
@@ -84,11 +102,13 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, editTextLocation.text, Toast.LENGTH_LONG).show()
                 Snackbar.make(myconstraintlayout, editTextLocation.text, Snackbar.LENGTH_LONG)
                     .show()
-                //test w/ local data
-                useTestData()
-            }
-            else{
-                Toast.makeText(this, "Please enter location", Toast.LENGTH_LONG ).show()
+                //test using local data
+                //useTestData()
+
+                //access FB mobile SDK
+                useFBPlaceManager()
+            } else {
+                Toast.makeText(this, "Please enter location", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -101,7 +121,7 @@ class MainActivity : AppCompatActivity() {
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
         Log.d("ak_onRestore", "re-setting the recycler view")
-        Toast.makeText(this, "onRestoreInstanceState", Toast.LENGTH_LONG ).show()
+        Toast.makeText(this, "onRestoreInstanceState", Toast.LENGTH_LONG).show()
 
         dataHandle = DataStore.getInstance(this)
         //instantiate recycle view adapter
@@ -112,6 +132,11 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         Log.d("ak_onStart", "onStart")
+
+        //check for fb permissions on select view or button click
+        //ContextCompat.checkSelfPermission(thisActivity,
+        //                      Manifest.permission.ACCESS_FINE_LOCATION)
+        //   != PackageManager.PERMISSION_GRANTED)
     }
 
     override fun onPause() {
@@ -143,24 +168,22 @@ class MainActivity : AppCompatActivity() {
     //======================
     //app specific functions
     //======================
-    private fun internetConnection(){
+    private fun internetConnection() {
         try {
             if (AppSupport.isNetworkConnected(this)) {
                 Toast.makeText(this, "Connection Successful!", Toast.LENGTH_SHORT).show()
-            }
-            else {
+            } else {
                 Toast.makeText(this, "Connection Failed!", Toast.LENGTH_LONG).show()
             }
-        }
-        catch (err: Exception){
+        } catch (err: Exception) {
             Toast.makeText(this, "Connection Failed!, Exception: $err", Toast.LENGTH_LONG).show()
         }
     }
 
+
     // remove android:usesCleartextTraffic="true" from
     // AndroidManifest.xml when switch fully to https
-    private fun useTestData(){
-
+    private fun useTestData() {
         //clear contents of class in case it was populated
         dataHandle.clearContent()
 
@@ -187,34 +210,62 @@ class MainActivity : AppCompatActivity() {
         val jsonArrayRequest = JsonArrayRequest(
             Request.Method.GET, urlMock, null,
             Response.Listener { response ->
-                Log.d("ak_mockyio","Response: $response")
+                Log.d("ak_mockyio", "Response: $response")
                 val param = "Response: %s".format(response.toString())
                 val sendintent = Intent(this, ResultsActivity::class.java)
                 sendintent.putExtra("result", param)
             },
             Response.ErrorListener { error ->
-                Toast.makeText(this,"Error: %s".format(error.toString()), Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Error: %s".format(error.toString()), Toast.LENGTH_LONG).show()
             })
         //add new request to queue
         queue.add(jsonArrayRequest)
     }
 
-    private fun callFacebookAPI() {
+
+    //*****************
+    //utility functions
+    //*****************
+    fun updateView(responseArr : JSONArray) {
         //clear contents of class in case it was populated
         dataHandle.clearContent()
 
-        //get client token from developer portal (this token does not require user login)
-        //can make requests to Facebook's PlaceManager after token set
-        FacebookSdk.setClientToken(this@MainActivity.getString(R.string.fb_client_token))
+        for (index in 0 until responseArr.length()-1)
+        {
+            //store api results in data store
+            dataHandle.apidata.apiFirst.add(responseArr.getJSONObject(index).getString("name"))
+            dataHandle.apidata.apiSecond.add(
+                "checkins: " + responseArr.getJSONObject(
+                    index
+                ).getString("checkins")
+            )
 
+            try {
+                val photoUrl = responseArr.getJSONObject(index)
+                    .getJSONObject("cover")
+                    .getString("source")
+                dataHandle.apidata.apiThird.add(photoUrl)
+            } catch (e: JSONException) {
+                Log.d("ak_imageStream", e.message.toString())
+                //image content not found
+                dataHandle.apidata.apiThird.add(resources.getString(R.string.stockphoto))
+            }
+            Log.d("ak_searchresultsName", dataHandle.apidata.apiFirst[index])
+        }
+
+        //instantiate recycle view adapter
+        val recyclerAdapter =
+            RecycleAdapter(ctx = this@MainActivity, apiData = dataHandle.apidata)
+        recycleViewId.adapter = recyclerAdapter
+    }
+
+
+    //****************
+    //using FB web API
+    //****************
+    private fun callFacebookAPI() {
         //log fb sdk status
         Log.d("ak_fb_init", "${FacebookSdk.isInitialized()}")
-        val accessToken = AccessToken(
-            this@MainActivity.getString(R.string.fb_access_token),
-            this@MainActivity.getString(R.string.fb_app_id),
-            this@MainActivity.getString(R.string.fb_app_uid), null,
-            null, null, null,
-            null,null, null)
         Log.d("ak_access_token", "Expired? %s".format(accessToken.isExpired.toString()))
         Log.d("ak_access_token_uid", accessToken.userId.toString())
 
@@ -233,36 +284,14 @@ class MainActivity : AppCompatActivity() {
                 Log.d("ak_facebookAPI","$response")
                 val responseArr  = response!!.jsonObject.getJSONArray("data")
                 Log.d("ak_response items", "${responseArr.length()}")
-                for (index in 0 until responseArr.length()-1) {
-
-                    //store api results in data store
-                    dataHandle.apidata.apiFirst.add(responseArr.getJSONObject(index).getString("name"))
-                    dataHandle.apidata.apiSecond.add("checkins: " + responseArr.getJSONObject(index).getString("checkins"))
-
-                    try {
-                        val photoUrl = responseArr.getJSONObject(index)
-                            .getJSONObject("cover")
-                            .getString("source")
-                        dataHandle.apidata.apiThird.add(photoUrl)
-                        }
-                    catch (e: JSONException) {
-                        Log.d("ak_imageStream", e.message.toString())
-                        //image content not found
-                        dataHandle.apidata.apiThird.add(resources.getString(R.string.stockphoto))
-                        }
-                    Log.d("ak_searchresultsName", dataHandle.apidata.apiFirst[index])
-                }
-
-                //instantiate recycle view adapter
-                val recyclerAdapter = RecycleAdapter(ctx = this@MainActivity, apiData = dataHandle.apidata)
-                recycleViewId.adapter = recyclerAdapter
+                updateView(responseArr)
             }
         }
 
         val categories = ArrayList<String>()
         categories.add("food_beverage")
         //set search parameters
-        val params: Bundle = Bundle().also { it: Bundle ->
+        val params = Bundle().also {
             it.putString("q", "${editTextLocation.text}")
             it.putString("type", "place")
             it.putString("fields", "name,link,cover,checkins")
@@ -272,5 +301,77 @@ class MainActivity : AppCompatActivity() {
         Log.d("ak_request", "$request")
         //send request
         request.executeAsync()
+    }
+
+
+    //************
+    //using FB SDK
+    //************
+    fun useFBPlaceManager(){
+        //build place search
+        val placeSrchBuilder = PlaceSearchRequestParams.Builder()
+        placeSrchBuilder.setSearchText("${editTextLocation.text}")
+        placeSrchBuilder.setDistance(10000) //in meters
+        placeSrchBuilder.setLimit(25) //max places to return
+        placeSrchBuilder.addField(PlaceFields.NAME)
+        placeSrchBuilder.addField(PlaceFields.LOCATION)
+        placeSrchBuilder.addField(PlaceFields.CHECKINS)
+        placeSrchBuilder.addField(PlaceFields.COVER)
+//        placeSrchBuilder.addField(PlaceFields.PHOTOS_PROFILE)
+//        placeSrchBuilder.addField(PlaceFields.PICTURE)
+
+        PlaceManager.newPlaceSearchRequest(placeSrchBuilder.build(), PlaceSrchCallback(this))
+    }
+
+    //PlaceSearchRequest callback requires implementing interface PlaceManager.OnRequestReadyCallback
+    class PlaceSrchCallback(private val activity: MainActivity) : PlaceManager.OnRequestReadyCallback, GraphRequest.Callback {
+        /**
+         * Method invoked when the request can't be generated due to an error retrieving the current
+         * device location.
+         * @param error the error description
+         */
+        override fun onLocationError(error: PlaceManager.LocationError?) {
+            Log.d("ak_LocationError","error.toString()")
+            val permissions = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION,
+                                                    Manifest.permission.ACCESS_COARSE_LOCATION)
+            ActivityCompat.requestPermissions(activity, permissions, 0)
+        }
+
+        /**
+         * Method invoked when the provided `GraphRequest` is ready to be executed.
+         * Set a callback on it to handle the response using `setCallback`, and then
+         * execute the request.
+         *
+         * @param graphRequest the request that's ready to be executed.
+         */
+        override fun onRequestReady(graphRequest: GraphRequest?) {
+            //graphRequest?.accessToken = this.activity.accessToken
+            graphRequest?.callback = this
+            graphRequest?.executeAsync()
+        }
+
+        /**
+         * The method that will be called when a request completes.
+         *
+         * @param response the Response of this request, which may include error information if the
+         * request was unsuccessful
+         */
+        override fun onCompleted(response: GraphResponse?) {
+            //println("response: ${response?.jsonObject?.getString("name")}")
+            Log.d("ak_fb_sdkresponse", "response: %s".format(response.toString()))
+            if (response?.error != null) {
+                Toast.makeText(
+                    this.activity,
+                    "fb_sdk error: %s".format(response.error.toString()),
+                    Toast.LENGTH_LONG
+                )
+                    .show()
+            }
+            else {
+                val responseArr = response!!.jsonObject.getJSONArray("data")
+                this.activity.updateView(responseArr)
+            }
+        }
+
     }
 }
